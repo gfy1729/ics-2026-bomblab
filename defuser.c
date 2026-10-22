@@ -24,6 +24,51 @@ int solve_phase_1(uint64_t challenge, char *out, size_t cap) {
     size_t count = 0;
     (void)challenge;
     // TODO: 根据 phase_01 的汇编，用 challenge 算出口令中的各个整数，依次存入 values，并把 count 改为整数个数。
+    
+    // 根据汇编中调用 valid_u32_fields 以及 sscanf 的部分可推断 count = 1
+    // phase_01 调用了函数 p1_compute，该函数应有一个参数，其值即为 challenge
+    // p1_compute 调用了三个函数用于计算
+    const uint64_t U32_MAX = 0xffffffffull;
+    uint64_t rax = 0;
+    uint64_t rsi ;
+    uint64_t rdi = challenge;
+    uint64_t rdx ;
+    // p1_compute
+    {
+        rax = rdi;
+        rdx = rdi;
+        rsi = rdi & U32_MAX;
+        rax >>= 0x20;
+        uint32_t r8d = (uint32_t)rdi;
+        rdx >>= 0x10;
+        rdi = rax & U32_MAX;
+        // p1_step2
+        {
+            rax = (rdi * 3) & U32_MAX;
+            rax = (rax + rsi) & U32_MAX;
+            rax ^= 0x99a1;
+        }
+        rsi = rdx;
+        rdi = r8d;
+        // p1_step0
+        uint64_t rcx = rax & U32_MAX;
+        {
+            rax = (rdi * 3) & U32_MAX;
+            rsi = (rsi + 0x9bf7) & U32_MAX;
+            rax ^= rsi;
+        }
+        rsi = rcx;
+        rdi = rax;
+        // p1_step1
+        {
+            rax = (rdi + rsi * 4) & U32_MAX;
+            rax ^= 0xd3b7;
+        }
+    }
+
+    *values = (uint32_t)rax;
+    count = 1;
+
     return write_answer(out, cap, values, count);
 }
 
