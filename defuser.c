@@ -77,6 +77,41 @@ int solve_phase_2(uint64_t challenge, char *out, size_t cap) {
     size_t count = 0;
     (void)challenge;
     // TODO: 根据 phase_02 的汇编，用 challenge 算出口令中的各个整数，依次存入 values，并把 count 改为整数个数。
+    // 根据汇编中调用 valid_u32_fields 以及 sscanf 的部分可推断 count = 6。
+    count = 6;
+    // sscanf 调用完成后，提取出的 6 个 uint32_t 应该存储于 %rbp 分别减去 0x40、0x3c、0x38、0x34、0x30、0x2c 的栈空间上
+    // 以下是 phase_02.S 对这六个 uint32_t 的处理，转写成 C 语言，由此可以看出 values[0] 以及 values[1-5] 的计算方法
+    /*
+    const uint64_t U32_MAX = 0xffffffffull;
+    uint64_t r8, r9, r12, r13, rax, rbx, rcx, rdx, rsi, rdi;
+    rbx = 1; // 先前调用完 valid_u32_fields 后若 rax 非 0，把 rax 移动到 rbx，故 rbx = 1
+    r13 = challenge;
+    rax = r13 & U32_MAX;
+    rsi = values[0];
+    rax >>= 0x1a;
+    if (rax != rsi)
+        return 0;
+    rcx = 0x15;
+    rdx = 0x1;
+    loop:
+    rax = r13;
+    rax >>= rcx;
+    rax &= 0x1f;
+    rax ^= rdx;
+    rax = (rax + rsi * 4) & U32_MAX;
+    rsi = values[rdx];
+    if (rsi != rax)
+        return 0;
+    rdx++;
+    rcx += 3;
+    if (rdx != 6)
+        goto loop;
+    rax = rbx;
+    */
+    values[0] = ((uint32_t)challenge) >> 0x1a;
+    for (uint64_t rdx = 1, rcx = 0x15; rdx != 6; rdx++, rcx += 3)
+        values[rdx] = ((challenge >> rcx & 0x1f) ^ rdx) + values[rdx - 1] * 4;
+
     return write_answer(out, cap, values, count);
 }
 
