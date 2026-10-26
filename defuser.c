@@ -120,6 +120,94 @@ int solve_phase_3(uint64_t challenge, char *out, size_t cap) {
     size_t count = 0;
     (void)challenge;
     // TODO: 根据 phase_03 的汇编，用 challenge 算出口令中的各个整数，依次存入 values，并把 count 改为整数个数。
+    // 根据汇编中调用 valid_u32_fields 以及 sscanf 的部分可推断 count = 2。
+    count = 2;
+    const uint64_t U32_MAX = 0xffffffffull;
+    /*
+    uint64_t r12 = challenge;
+    uint64_t rdi = r12 & U32_MAX;
+    uint64_t rax = 0;
+    rdi &= 0x7;
+    if (rdi != values[0])
+        return 0;
+    */
+    // 由此可见，values[0] = challenge & 0x7 .
+    /*
+    rax = r12 >> 0x3;
+    uint64_t rsi = r12 >> 0x20;
+    rsi = (rsi ^ rax) & U32_MAX;
+    {
+        // 以下为函数 p3_dispatch。注意返回值是 32 位的。
+        rax = rdi;
+        rdi = rsi & U32_MAX;
+        if (0x7 < rax)
+            return 0;
+
+
+         * --- Jump Table ---
+         * rax = 0 : 0x402258
+         * rax = 1 : 0x402260
+         * rax = 2 : 0x402268
+         * rax = 3 : 0x402270
+         * rax = 4 : 0x402278
+         * rax = 5 : 0x402280
+         * rax = 6 : 0x402248
+         * rax = 7 : 0x402250
+         
+
+        switch (rax) {
+        case 0:
+            return 3 * rdi + 0xe0cf;
+        case 1:
+            return 3 * rdi + 0x973e;
+        case 2:
+            return (0xd1a5 ^ rdi) + (rdi >> 2);
+        case 3:
+            return 5 * rdi + 0x152ac;
+        case 4:
+            return rdi << 1 ^ 0x5936;
+        case 5:
+            return 5 * rdi + 0x16e86;
+        case 6:
+            return rdi << 1 ^ 0x34e8;
+        case 7:
+            return (rdi >> 1) + (rdi ^ 0xc34c);
+        }
+    }
+    */
+    values[0] = challenge & 0x7;
+    uint64_t rax = challenge >> 0x3;
+    uint64_t rsi = challenge >> 0x20;
+    rsi = (rsi ^ rax) & U32_MAX;
+    rax = values[0];
+    uint64_t rdi = rsi & U32_MAX;
+    switch (rax) {
+    case 0:
+        values[1] = 3 * rdi + 0xe0cf;
+        break;
+    case 1:
+        values[1] = 3 * rdi + 0x973e;
+        break;
+    case 2:
+        values[1] = (0xd1a5 ^ rdi) + (rdi >> 2);
+        break;
+    case 3:
+        values[1] = 5 * rdi + 0x152ac;
+        break;
+    case 4:
+        values[1] = rdi << 1 ^ 0x5936;
+        break;
+    case 5:
+        values[1] = 5 * rdi + 0x16e86;
+        break;
+    case 6:
+        values[1] = rdi << 1 ^ 0x34e8;
+        break;
+    case 7:
+        values[1] = (rdi >> 1) + (rdi ^ 0xc34c);
+        break;
+    }
+
     return write_answer(out, cap, values, count);
 }
 
