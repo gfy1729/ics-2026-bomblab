@@ -211,11 +211,43 @@ int solve_phase_3(uint64_t challenge, char *out, size_t cap) {
     return write_answer(out, cap, values, count);
 }
 
+uint32_t p4_walk(uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
+    uint32_t temp = ((c - b) >> 1) + b;
+    if (a == temp) {
+        return (temp + 0x2b) ^ d;
+    }
+    uint32_t temp2 = temp + d;
+    if (a < temp) {
+        return (p4_walk(a, b, temp - 1, d) * 3) ^ temp2 ^ 0x11;
+    } else {
+        return (p4_walk(a, temp + 1, c, d) * 3) ^ temp2 ^ 0xf;
+    }
+}
+
 int solve_phase_4(uint64_t challenge, char *out, size_t cap) {
     uint32_t values[MAX_FIELDS] = {0};
     size_t count = 0;
     (void)challenge;
     // TODO: 根据 phase_04 的汇编，用 challenge 算出口令中的各个整数，依次存入 values，并把 count 改为整数个数。
+    // 根据汇编中调用 valid_u32_fields 以及 sscanf 的部分可推断 count = 1。
+    count = 1;
+    // const uint64_t U32_MAX = 0xffffffffull;
+    /*
+    uint64_t rsi, rdi, rax, r12, rcx, rdx, rbx;
+    r12 = challenge;
+    rax = r12;
+    rcx = r12;
+    rdi = r12 & U32_MAX;
+    rsi = 0;
+    rax >>= 0x20;
+    rcx >>= 0x7;
+    rdi &= 0x7f;
+    rdx = 0x7f;
+    rcx ^= rax;
+    // 此处调用 p4_walk 函数，应有 4 个参数
+    return p4_walk(rdi, rsi, rdx, rcx) == values[0];
+    */
+    values[0] = p4_walk(challenge & 0x7f, 0, 0x7f, challenge >> 0x20 ^ challenge >> 0x7);
     return write_answer(out, cap, values, count);
 }
 
