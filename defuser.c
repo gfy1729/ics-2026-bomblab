@@ -298,11 +298,38 @@ int solve_phase_5(uint64_t challenge, char *out, size_t cap) {
     return write_answer(out, cap, values, count);
 }
 
+uint32_t p6_call(uint32_t idx, uint32_t arg) {
+    if (idx == 0) {
+        // 0x4024e0: <p6_op_1>
+        return (arg + 0x9fcf) ^ arg >> 5;
+    } else if (idx == 1) {
+        // 0x402540: <p6_op_5>
+        return arg >> 5 | arg << 27;
+    } else if (idx == 3 || idx == 2) {
+        // 0x402520: <p6_op_4>
+        return (arg ^ 0x7781) + (arg << 0x7);
+    } else if (idx == 4) {
+        // 0x402500: <p6_op_3>
+        return (2 * arg + 0xdead) ^ (3 * arg);
+    } else if (idx == 5 || idx == 7) {
+        // 0x4024d0: <p6_op_0>
+        return (arg << 1 | arg >> 31) ^ 0xcce0;
+    } else {
+        // 0x4024f0: <p6_op_2>
+        return (arg ^ arg >> 1) + 0x475e;
+    }
+}
+
 int solve_phase_6(uint64_t challenge, char *out, size_t cap) {
     uint32_t values[MAX_FIELDS] = {0};
     size_t count = 0;
     (void)challenge;
     // TODO: 根据 phase_06 的汇编，用 challenge 算出口令中的各个整数，依次存入 values，并把 count 改为整数个数。
+    // 根据汇编中调用 valid_u32_fields 以及 sscanf 的部分可推断 count = 1。
+    count = 1;
+    
+    values[0] = p6_call((challenge & 0x38) >> 3, p6_call(challenge & 0x7, challenge >> 0x6 ^ challenge >> 0x20) ^ 0x9e42) + 0xfe0c;
+
     return write_answer(out, cap, values, count);
 }
 
