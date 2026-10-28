@@ -251,11 +251,50 @@ int solve_phase_4(uint64_t challenge, char *out, size_t cap) {
     return write_answer(out, cap, values, count);
 }
 
+uint32_t p5_traverse(uint64_t x, uint32_t *y) {
+    // 从 bomb 中提取的数据
+    const uint32_t table[24][2] = {
+    { 0x0000DDB7u, 0x00000344u}, {0x00405C20u, 0x00000000u }, /* 0x405ba0 */
+    { 0x00007014u, 0x0000042Au}, {0x00405C40u, 0x00000000u }, /* 0x405bb0 */
+    { 0x0000692Du, 0x00000659u}, {0x00405C30u, 0x00000000u }, /* 0x405bc0 */
+    { 0x00001776u, 0x00000830u}, {0x00405BE0u, 0x00000000u }, /* 0x405bd0 */
+    { 0x00001B04u, 0x00000053u}, {0x00000000u, 0x00000000u }, /* 0x405be0 */
+    { 0x000075C2u, 0x00000B19u}, {0x00405BD0u, 0x00000000u }, /* 0x405bf0 */
+    { 0x00004E1Fu, 0x00000972u}, {0x00405C50u, 0x00000000u }, /* 0x405c00 */
+    { 0x00000DCFu, 0x00000559u}, {0x00405BA0u, 0x00000000u }, /* 0x405c10 */
+    { 0x0000AB84u, 0x00000770u}, {0x00405BB0u, 0x00000000u }, /* 0x405c20 */
+    { 0x0000E8C2u, 0x00000159u}, {0x00405BF0u, 0x00000000u }, /* 0x405c30 */
+    { 0x0000DF05u, 0x00000A71u}, {0x00405C00u, 0x00000000u }, /* 0x405c40 */
+    { 0x00004E2Au, 0x00000254u}, {0x00405BC0u, 0x00000000u }, /* 0x405c50 */
+    };
+    const uint32_t index[8] = { 14, 0, 16, 2, 20, 12, 22, 4 };
+    // printf("Challenge: %lu\n", x);
+    uint32_t idx = index[x & 7];
+    *y = table[idx][1];
+    uint32_t res = (x >> 6 ^ x >> 0x20 ^ table[idx][0] ^ 0xca38) + *y;
+    if ((x >> 3 & 3) == 0)
+        return res;
+    uint32_t i = 1;
+    do {
+        idx = (table[idx + 1][0] - 0x405BA0u) / 8u;
+        i++;
+        *y = table[idx][1];
+        res = (res ^ table[idx][0]) + table[idx][1];
+    } while ((x >> 3 & 3) >= i);
+    // *y = 0xffffffffu;
+    return res;
+}
+
 int solve_phase_5(uint64_t challenge, char *out, size_t cap) {
     uint32_t values[MAX_FIELDS] = {0};
     size_t count = 0;
     (void)challenge;
     // TODO: 根据 phase_05 的汇编，用 challenge 算出口令中的各个整数，依次存入 values，并把 count 改为整数个数。
+    // 根据汇编中调用 valid_u32_fields 以及 sscanf 的部分可推断 count = 2。
+    count = 2;
+    // phase_05 调用的 p5_traverse 函数有两个参数，第一个（rdi）为 64 位整数（即为 challenge），第二个（rsi）为指针，指向 32 位整数。
+    // 若 values[0] 等于 p5_traverse 返回值且 values[1] 等于指针参数指向的 32 位整数，则 phase_05 返回 1。
+    values[0] = p5_traverse(challenge, &values[1]);
     return write_answer(out, cap, values, count);
 }
 
