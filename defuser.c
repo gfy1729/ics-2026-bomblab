@@ -352,7 +352,7 @@ int solve_secret(uint64_t challenge, uint64_t context, char *out, size_t cap) {
     // 第七行不一定只有整数，可以直接用 snprintf 写入；还没完成时保持返回 1，测试会显示 not attempted。
     
     /* secret_gate 函数调用 secret_phase 和 secret_copy 函数，secret_phase 调用 secret_mix，故先从 secret_gate 开始分析。
-     * secret_copy(dst, src) 作用是把字符串 src 复制到 dst（包括末尾 0），然后返回 src 长度
+     * secret_copy(dst, src) 作用是把字符串 src 复制到 dst（包括末尾 0）
      * 在 secret_gate 中的用途是把第一个参数（指针）指向的字符串复制到栈空间（起始位置为 -0xd0(%rbp)）
      * 注意到 secret_gate 调用完 secret_copy 后立刻进行一个关键的判断：  40276b:	81 bd 50 ff ff ff 4f 	cmpl   $0x4e45504f,-0xb0(%rbp)
      * 其中的立即数 0x4e45504f 逐 Byte 当成字符串理解，是 "OPEN"。这表明我们的输出的第 33-36 字节应为 "OPEN"。
