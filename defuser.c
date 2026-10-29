@@ -333,12 +333,39 @@ int solve_phase_6(uint64_t challenge, char *out, size_t cap) {
     return write_answer(out, cap, values, count);
 }
 
+uint32_t secret_mix(uint32_t edi) {
+    return (edi ^ 0xe194) + (edi >> 0x7 ^ 0xd36f);
+}
+
 int solve_secret(uint64_t challenge, uint64_t context, char *out, size_t cap) {
     (void)challenge;
     (void)context;
     (void)out;
     (void)cap;
+
+    // uint64_t temp = context;
+    // context = challenge;
+    // challenge = temp;
+
+
     // TODO（选做）: 根据 secret_gate、secret_copy 和 secret_phase 的汇编构造完整的第七行，写入 out 后返回 0。
     // 第七行不一定只有整数，可以直接用 snprintf 写入；还没完成时保持返回 1，测试会显示 not attempted。
-    return 1;
+    
+    /* secret_gate 函数调用 secret_phase 和 secret_copy 函数，secret_phase 调用 secret_mix，故先从 secret_gate 开始分析。
+     * secret_copy(dst, src) 作用是把字符串 src 复制到 dst（包括末尾 0），然后返回 src 长度
+     * 在 secret_gate 中的用途是把第一个参数（指针）指向的字符串复制到栈空间（起始位置为 -0xd0(%rbp)）
+     * 注意到 secret_gate 调用完 secret_copy 后立刻进行一个关键的判断：  40276b:	81 bd 50 ff ff ff 4f 	cmpl   $0x4e45504f,-0xb0(%rbp)
+     * 其中的立即数 0x4e45504f 逐 Byte 当成字符串理解，是 "OPEN"。这表明我们的输出应以 "OPEN" 开始。
+     * 随后，secret_gate 调用 secret_phase。调用前有   40277d:	48 8d bd 54 ff ff ff 	lea    -0xac(%rbp),%rdi ，
+     * 相当于传入了字符串在 "OPEN" 以后的部分。传入 secret_phase 的另外两个参数应为 challenge 和 context。
+     *
+     * 从 secret_phase 调用 valid_u32_fields 和 sscanf 的方式可以看出，字符串在 "OPEN" 以后的部分能够表示 3 个 32 位无符号整数。
+     * 根据汇编代码不难得出这 3 个整数的计算方法。
+     */
+    uint32_t values[3] = {0};
+    values[0] = context & 0x3;
+    values[1] = secret_mix((uint32_t)(context >> 0x20 ^ context) ^ (uint32_t)(challenge >> 0x20 ^ challenge)) ^ ((0xe194 * (context & 0x3)) ^ context >> 0x10);
+    values[2] = values[1] ^ ((uint32_t)(context >> 0x20 ^ context) + (context & 0x3) + ((uint32_t)(challenge >> 0x20 ^ challenge) >> 0x7) + 0xd36f);
+    // 最终得到的字符串前 32 位为任意字符，第 33-36 位为 "OPEN"，37 位及以后表示 3 个 32 位无符号整数
+    return (void)snprintf(out, cap, "********************************OPEN%"PRIu32" %"PRIu32" %"PRIu32, values[0], values[1], values[2]), 0;
 }
