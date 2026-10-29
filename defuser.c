@@ -355,7 +355,7 @@ int solve_secret(uint64_t challenge, uint64_t context, char *out, size_t cap) {
      * secret_copy(dst, src) 作用是把字符串 src 复制到 dst（包括末尾 0），然后返回 src 长度
      * 在 secret_gate 中的用途是把第一个参数（指针）指向的字符串复制到栈空间（起始位置为 -0xd0(%rbp)）
      * 注意到 secret_gate 调用完 secret_copy 后立刻进行一个关键的判断：  40276b:	81 bd 50 ff ff ff 4f 	cmpl   $0x4e45504f,-0xb0(%rbp)
-     * 其中的立即数 0x4e45504f 逐 Byte 当成字符串理解，是 "OPEN"。这表明我们的输出应以 "OPEN" 开始。
+     * 其中的立即数 0x4e45504f 逐 Byte 当成字符串理解，是 "OPEN"。这表明我们的输出的第 33-36 字节应为 "OPEN"。
      * 随后，secret_gate 调用 secret_phase。调用前有   40277d:	48 8d bd 54 ff ff ff 	lea    -0xac(%rbp),%rdi ，
      * 相当于传入了字符串在 "OPEN" 以后的部分。传入 secret_phase 的另外两个参数应为 challenge 和 context。
      *
